@@ -56,7 +56,7 @@ class ModelProvider:
             self.system_prompt = self.system_prompt
 
 
-    def __query_async(self, query):
+    def query_stream(self, query):
         """Sends query to model and yields the response in chunks."""
         if self.model in ["o1-preview", "o1-mini"]:
             messages = [
@@ -90,7 +90,7 @@ class ModelProvider:
         chunks that it yields, and returns the full response as a string.
         """
         chunks = []
-        for chunk in self.__query_async(query=query):
+        for chunk in self.query_stream(query=query):
             chunks.append(chunk)
         response = "".join(chunks)
         return response

@@ -1,7 +1,6 @@
 from ..interface.response_handler import StreamEventEmitter
 from ..interface.events import TextChunkEvent
-
-from asyncio import Queue
+from queue import Queue
 
 class TextStream(StreamEventEmitter[str]):
     def __init__(
@@ -32,7 +31,6 @@ class TextStream(StreamEventEmitter[str]):
             content=chunk
         )
         self._response_queue.put(event)
-        return self
 
 
     async def complete(self) -> None:
@@ -46,7 +44,7 @@ class TextStream(StreamEventEmitter[str]):
         )
         self._response_queue.put(event)
         self._is_complete = True
-        return
+        print("Stream complete")
 
 
     @property

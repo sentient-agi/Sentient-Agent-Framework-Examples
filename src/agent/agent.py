@@ -8,10 +8,10 @@ import os
 
 load_dotenv()
 class Agent:
-    def __init__(self):
+    def __init__(self, response_queue):
         self.model_provider = ModelProvider(api_key=os.getenv("MODEL_API_KEY"))
         self.search_provider = SearchProvider(api_key=os.getenv("TAVILY_API_KEY"))
-        self.response_queue = asyncio.Queue()
+        self.response_queue = response_queue
         self.response_handler = SSEResponseHandler(self.response_queue)
 
 
@@ -38,23 +38,21 @@ class Agent:
             await self.response_handler.emit_json(
                 "SOURCES", {"results": search_results["results"]}
             )
-            print(f"Search result: {search_results["results"]}")
         if len(search_results["images"]) > 0:
             await self.response_handler.emit_json(
                 "IMAGES", {"images": search_results["images"]}
             )
-            print(f"Search result: {search_results["images"]}")
 
         # Process search results
         final_response_stream = self.response_handler.create_text_stream(
             "FINAL_RESPONSE"
             )
         print("Processing search results...")
-        process_search_results_response = self.process_search_results(search_results["results"])
-        for word in process_search_results_response.split():
-            await final_response_stream.emit_chunk(word)
-            await asyncio.sleep(0.05)
+        for chunk in self.process_search_results(search_results["results"]):
+            await final_response_stream.emit_chunk(chunk)
+        print("Final response stream complete, completing stream...")
         await final_response_stream.complete()
+        print("Response complete, completing response handler...")
         await self.response_handler.complete()
 
 
@@ -68,28 +66,5 @@ class Agent:
     def process_search_results(self, search_results):
         # Process search results
         process_search_results_query = f"Summarise the following search results: {search_results}"
-        process_search_results_response = self.model_provider.query(process_search_results_query)
-        return process_search_results_response
-
-
-    def run(self):
-        app = Flask(__name__)
-
-        @app.route('/search')
-        async def sse():
-            query = request.args.get('query')
-
-            async def event_stream():
-                # Start the search in a background task
-                search_task = asyncio.create_task(self.search(query))
-
-                while True:
-                    event_data = self.response_queue.get()
-                    yield f"data: {event_data}\n\n"
-
-            return Response(
-                event_stream(),
-                content_type='text/event-stream'
-            )
-
-        app.run(debug=True, threaded=True)
+        for chunk in self.model_provider.query_stream(process_search_results_query):
+            yield chunk

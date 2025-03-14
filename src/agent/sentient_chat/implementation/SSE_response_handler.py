@@ -8,9 +8,8 @@ from src.agent.sentient_chat.interface.events import (
     TextBlockEvent,
     DEFAULT_ERROR_CODE
 )
-from .text_stream import TextStream
-
-from asyncio import Queue
+from queue import Queue
+from .SSE_text_stream import TextStream
 from typing import (
     Any,
     Mapping,
@@ -124,6 +123,7 @@ class SSEResponseHandler:
         await self._emit_event(event)
 
 
+    @property
     def is_complete(self) -> bool:
         """Return True if the response is complete."""
         return self._is_complete
@@ -138,10 +138,10 @@ class SSEResponseHandler:
         for stream in self._streams.values():
             if not stream.is_complete:
                 await stream.complete()
-
         self._is_complete = True
         await self._emit_event(
             DoneEvent(source=self.id))
+        self._response_queue.shutdown()
 
 
     async def _emit_event(self, event) -> None:
