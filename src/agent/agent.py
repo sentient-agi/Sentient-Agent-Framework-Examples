@@ -1,12 +1,14 @@
+import os
 from dotenv import load_dotenv
 from flask import Flask, Response, request
 from src.agent.providers.model_provider import ModelProvider
 from src.agent.providers.search_provider import SearchProvider
 from src.agent.sentient_chat.implementation.SSE_response_handler import SSEResponseHandler
-import asyncio
-import os
+
 
 load_dotenv()
+
+
 class Agent:
     def __init__(self, response_queue):
         self.model_provider = ModelProvider(api_key=os.getenv("MODEL_API_KEY"))

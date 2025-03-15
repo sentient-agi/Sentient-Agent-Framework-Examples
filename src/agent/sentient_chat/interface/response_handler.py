@@ -27,9 +27,7 @@ class StreamEventEmitter(Protocol, Generic[T_contra]):
 
 
     async def emit_chunk(self, chunk: T_contra):
-        """
-         send event chunk to this stream
-        """
+        """ Send event chunk to this stream"""
 
 
 class ResponseHandler(Protocol):

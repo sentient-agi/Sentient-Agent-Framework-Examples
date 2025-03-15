@@ -2,39 +2,20 @@ import openai
 from datetime import datetime
 from langchain_core.prompts import PromptTemplate
 
+
 class ModelProvider:
-    """
-    A class for interfacing with a model using the OpenAI API.
-
-    Attributes:
-        api_key (str): API key used for authentication.
-        date_context (str): A string representing the current date, used in the
-            system prompt.
-        client (openai.OpenAI): An instance of the OpenAI client configured
-            with the provided API key and base URL.
-
-    Methods:
-        query(query, contexts): Queries the model and returns the full response
-            as a string.
-    """
-
-
     def __init__(self, api_key):
-        """
-        Initializes the Model class with the necessary parameters.
+        """ Initializes model, sets up OpenAI client, configures system prompt."""
 
-        Args:
-            api_key (str): API key for authenticating with the OpenAI service.
-
-        Initializes the model, sets up the OpenAI client, and configures the 
-        system prompt.
-        """
-
-        # Assign values to object properties
+        # Model provider API key
         self.api_key = api_key
-        self.base_url = "https://api.fireworks.ai/inference/v1"
+        # Model provider URL
+        self.base_url = "https://api.fireworks.ai/inference/v1" 
+        # Identifier for specific model that should be used
         self.model = "accounts/sentientfoundation/models/dobby-unhinged-llama-3-3-70b-new"
+        # Temperature setting for response randomness
         self.temperature = 0.0
+        # Maximum number of tokens for responses
         self.max_tokens = None
         self.system_prompt = "default"
         self.date_context = datetime.now().strftime("%Y-%m-%d")
@@ -83,12 +64,7 @@ class ModelProvider:
 
 
     def query(self, query):
-        """
-        Sends query to model and returns the complete response as a string.
-
-        This method calls the `__query_async` method, concatenates all of the 
-        chunks that it yields, and returns the full response as a string.
-        """
+        """Sends query to model and returns the complete response as a string."""
         chunks = []
         for chunk in self.query_stream(query=query):
             chunks.append(chunk)

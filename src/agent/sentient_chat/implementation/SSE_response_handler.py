@@ -1,3 +1,5 @@
+import json
+import uuid
 from ..interface.response_handler import StreamEventEmitter
 from src.agent.sentient_chat.interface.events import (
     DocumentEvent,
@@ -17,9 +19,6 @@ from typing import (
     Union
 )
 
-import json
-import uuid
-
 class SSEResponseHandler:
     def __init__(
             self,
@@ -36,7 +35,7 @@ class SSEResponseHandler:
             event_name: str,
             response: Union[Mapping[Any, Any] | str]
     ) -> None:
-        """ syncronus function to Send a single atomic event as complete response for request. """
+        """Syncronus function to Send a single atomic event as complete response for request. """
         event: TextBlockEvent | DocumentEvent | None = None
         match response:
             case str():
@@ -145,8 +144,5 @@ class SSEResponseHandler:
 
 
     async def _emit_event(self, event) -> None:
-        """
-        Internal method to emit events. Override this in subclasses to handle
-        event delivery.
-        """
+        """Internal method to emit events."""
         self._response_queue.put(event)
