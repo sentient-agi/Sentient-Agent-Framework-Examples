@@ -80,6 +80,3 @@ Event (base class)
 
 ### Identity
 SentientChat uses an `Identity` object to identify the source of an event (typically an agent). It contains an `id` and a `name`.
-
-### ResponseHandler
-The `ResponseHandler` is responsible for sending events to the client.
