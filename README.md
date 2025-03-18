@@ -1,29 +1,85 @@
-# Search-Agent-SSE-Example
+# Search Agent SSE Example
 
-## Key Points of This Implementation:
+This is a simple example demonstrating how to set up agent that is compatible with SentientChat. It uses a Flask server that connects to an agent and streams responses to a client using Server-Sent Events (SSE).
 
-### StreamEventEmitter:
-This class manages event streaming. It uses an asyncio.Queue to hold the events and then sends them through the HTTP response stream.
+> [!NOTE]
+> **These instructions are for unix-based systems (i.e. MacOS, Linux). Before you proceed, make sure that you have installed `python` and `pip`. If you have not, follow [these](https://packaging.python.org/en/latest/tutorials/installing-packages/) instructions to do so.**
 
-### ResponseHandler:
-This class contains methods for handling different types of responses like emit_json, emit_text_block, and error responses. It also contains complete and is_complete for tracking whether the response is finished.
+> [!WARNING]
+> **The format of the messages returned by the server is important. Read more [here](https://html.spec.whatwg.org/multipage/server-sent-events.html).**
 
-### SSERequestHandler:
-This is a custom request handler that uses the built-in BaseHTTPRequestHandler to handle SSE requests. It listens on /sse, sets the correct headers for SSE, and uses the StreamEventEmitter to send messages.
+#### 1. Create Python virtual environment:
+```
+python3 -m venv .venv
+```
 
-### asyncio.run():
-Since http.server is synchronous, we need to use asyncio.run() to run asynchronous operations like sending and streaming events.
+#### 2. Activate Python virtual environment:
+```
+source .venv/bin/activate
+```
 
-## No External Dependencies:
-This implementation relies on Python's built-in http.server and asyncio for asynchronous functionality, keeping dependencies minimal.
+#### 3. Install dependencies:
+```
+pip install -r requirements.txt
+```
 
-## Running the Server:
-1. **Run the Script:** Simply run the Python script, and the server will start listening on http://localhost:8080.
-2. **Access the SSE Stream:** You can test the SSE endpoint by navigating to http://localhost:8080/sse in your browser or by using curl:
-curl http://localhost:8080/sse
-3. **Server Behavior:** The server will keep the connection open and send three event messages (First message, Second message, and Third message).
-Once the messages are sent, the server will complete the stream.
+#### 4. Run the script:
+```
+python3 flask_sse_server.py
+```
 
-## Notes:
-- This server uses minimal external dependencies (just Python's built-in libraries) while still supporting the core functionality of SSE and responding asynchronously.
-- The server is designed to be simple and extendable. You can easily modify it to handle more complex event streaming, including error handling and various content types.
+#### 5. Use a tool like [CuRL](https://curl.se/) or [Postman](https://www.postman.com/) to query the server:
+```
+curl --location --request GET 'http://127.0.0.1:5000/query' \
+--header 'Content-Type: application/json' \
+--data '{
+    "query": "Who is Lionel Messi?"
+}'
+```
+Expected output:
+```
+
+data: content_type=<EventContentType...
+
+... 
+```
+
+
+## SentientChat Interfaces
+### Events
+SentientChat uses a custom event system for agent responses. The system is designed to be compatible with Server-Sent Events (SSE), so that updates can be pushed in real-time. This is particularly useful for streaming responses from an AI agent, where you might want to show the response as it's being generated rather than waiting for the complete response.
+
+1. **Atomic Events** (single, complete messages):
+   - `DocumentEvent`: For sending JSON data
+   - `TextBlockEvent`: For sending a complete block of text
+   - `ErrorEvent`: For sending error messages
+   - `DoneEvent`: To signal completion
+
+2. **Chunked/Stream Events**:
+   - `TextChunkEvent`: For streaming text responses piece by piece
+
+Each event has:
+- A `content_type` to identify what kind of event it is
+- An `event_name` to identify the specific event
+- A `source` to identify where it came from
+- Optional `metadata` for additional information
+- Unique `id` using ULID (Universal Lexicographically sortable Unique IDentifier)
+
+The events follow a clear hierarchy:
+```
+Event (base class)
+└── BaseEvent
+    ├── AtomicEvent (single messages)
+    │   ├── DocumentEvent (JSON)
+    │   ├── TextBlockEvent (text)
+    │   ├── ErrorEvent
+    │   └── DoneEvent
+    └── StreamEvent
+        └── TextChunkEvent (streaming text)
+```
+
+### Identity
+SentientChat uses an `Identity` object to identify the source of an event (typically an agent). It contains an `id` and a `name`.
+
+### ResponseHandler
+The `ResponseHandler` is responsible for sending events to the client.

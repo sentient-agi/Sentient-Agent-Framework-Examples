@@ -1,10 +1,13 @@
 import openai
 from datetime import datetime
 from langchain_core.prompts import PromptTemplate
-
+from typing import Iterator
 
 class ModelProvider:
-    def __init__(self, api_key):
+    def __init__(
+        self,
+        api_key: str
+    ):
         """ Initializes model, sets up OpenAI client, configures system prompt."""
 
         # Model provider API key
@@ -37,8 +40,12 @@ class ModelProvider:
             self.system_prompt = self.system_prompt
 
 
-    def query_stream(self, query):
+    def query_stream(
+        self,
+        query: str
+    ) -> Iterator[str]:
         """Sends query to model and yields the response in chunks."""
+
         if self.model in ["o1-preview", "o1-mini"]:
             messages = [
                 {"role": "user",
@@ -63,8 +70,12 @@ class ModelProvider:
                 yield chunk.choices[0].delta.content
 
 
-    def query(self, query):
+    def query(
+        self,
+        query: str
+    ) -> str:
         """Sends query to model and returns the complete response as a string."""
+        
         chunks = []
         for chunk in self.query_stream(query=query):
             chunks.append(chunk)

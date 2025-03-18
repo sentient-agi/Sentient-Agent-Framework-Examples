@@ -1,5 +1,5 @@
 import json
-import uuid
+from cuid2 import Cuid
 from ..interface.response_handler import StreamEventEmitter
 from src.agent.sentient_chat.interface.events import (
     DocumentEvent,
@@ -10,8 +10,9 @@ from src.agent.sentient_chat.interface.events import (
     TextBlockEvent,
     DEFAULT_ERROR_CODE
 )
+from src.agent.sentient_chat.interface.identity import Identity
 from queue import Queue
-from .SSE_text_stream import TextStream
+from .queue_text_stream import QueueTextStream
 from typing import (
     Any,
     Mapping,
@@ -19,28 +20,31 @@ from typing import (
     Union
 )
 
-class SSEResponseHandler:
+
+class QueueResponseHandler:
     def __init__(
-            self,
-            response_queue: Queue
+        self,
+        source: Identity,
+        response_queue: Queue
     ):
-        self.id = str(uuid.uuid4())
+        self._source = source
         self._is_complete = False
         self._response_queue = response_queue
+        self._cuid_generator: Cuid = Cuid(length=10)
         self._streams: dict[str, StreamEventEmitter] = {}
 
     
     async def respond(
-            self,
-            event_name: str,
-            response: Union[Mapping[Any, Any] | str]
+        self,
+        event_name: str,
+        response: Union[Mapping[Any, Any] | str]
     ) -> None:
         """Syncronus function to Send a single atomic event as complete response for request. """
         event: TextBlockEvent | DocumentEvent | None = None
         match response:
             case str():
                 event = TextBlockEvent(
-                    source=self.id,
+                    source=self._source.id,
                     event_name=event_name,
                     content=response
                 )
@@ -52,21 +56,26 @@ class SSEResponseHandler:
                         "Response content must be JSON serializable"
                     ) from e
                 event = DocumentEvent(
-                    source=self.id,
+                    source=self._source.id,
                     event_name=event_name,
                     content=response
                 )
-        await self._emit_event(event)
+        await self.__emit_event(event)
         await self.complete()
 
     
-    async def _send_event_chunk(self, chunk: StreamEvent) -> None:
+    async def __send_event_chunk(
+        self, 
+        chunk: StreamEvent
+    ) -> None:
         """Send a chunk of text to a stream."""
-        await self._emit_event(chunk)
+        await self.__emit_event(chunk)
 
     
     async def emit_json(
-        self, event_name: str, data: Mapping[Any, Any]
+        self,
+        event_name: str,
+        data: Mapping[Any, Any]
     ) -> None:
         """Send a single atomic JSON response."""
         try:
@@ -76,37 +85,44 @@ class SSEResponseHandler:
                 "Response content must be JSON serializable"
             ) from e
         event = DocumentEvent(
-            source=self.id,
+            source=self._source.id,
             event_name=event_name,
             content=data
         )
 
-        await self._emit_event(event)
+        await self.__emit_event(event)
 
     
-    async def emit_text_block(self, event_name: str, content: str) -> None:
+    async def emit_text_block(
+        self, 
+        event_name: str, 
+        content: str
+    ) -> None:
         """Send a single atomic text block response."""
         event = TextBlockEvent(
-            source=self.id,
+            source=self._source.id,
             event_name=event_name,
             content=content
         )
-        await self._emit_event(event)
+        await self.__emit_event(event)
 
     
-    def create_text_stream(self, event_name: str) -> TextStream:
+    def create_text_stream(
+        self,
+        event_name: str
+    ) -> QueueTextStream:
         """Create and return a new TextStream object."""
-        stream_id = str(uuid.uuid4())
-        stream = TextStream(self.id, event_name, stream_id, self._response_queue)
+        stream_id = self._cuid_generator.generate()
+        stream = QueueTextStream(self._source, event_name, stream_id, self._response_queue)
         self._streams[stream_id] = stream
         return stream
 
     
     async def emit_error(
-            self,
-            error_message: str,
-            error_code: int = DEFAULT_ERROR_CODE,
-            details: Optional[Mapping[str, Any]] = None
+        self,
+        error_message: str,
+        error_code: int = DEFAULT_ERROR_CODE,
+        details: Optional[Mapping[str, Any]] = None
     ) -> None:
         """Send an error event."""
         error_content = ErrorContent(
@@ -115,11 +131,11 @@ class SSEResponseHandler:
             details=details
         )
         event = ErrorEvent(
-            source=self.id,
+            source=self._source.id,
             event_name="error",
             content=error_content
         )
-        await self._emit_event(event)
+        await self.__emit_event(event)
 
 
     @property
@@ -138,11 +154,10 @@ class SSEResponseHandler:
             if not stream.is_complete:
                 await stream.complete()
         self._is_complete = True
-        await self._emit_event(
-            DoneEvent(source=self.id))
-        self._response_queue.shutdown()
+        await self.__emit_event(
+            DoneEvent(source=self._source.id))
 
 
-    async def _emit_event(self, event) -> None:
+    async def __emit_event(self, event) -> None:
         """Internal method to emit events."""
         self._response_queue.put(event)
