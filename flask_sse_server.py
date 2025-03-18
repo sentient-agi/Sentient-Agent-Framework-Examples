@@ -1,27 +1,17 @@
-import asyncio
-import threading
 from flask import Flask, Response, request
 from queue import Queue
 from src.agent.agent import Agent
-from src.agent.sentient_chat.interface.identity import Identity
-from src.agent.sentient_chat.interface.events import DoneEvent
+from src.agent.sentient_chat.identity import Identity
 
 app = Flask(__name__)
-response_queue=Queue()
 agent = Agent(
     identity=Identity(id="SSE-Demo", name="SSE Demo"),
-    response_queue=response_queue
-)
+)       
 
 
 def generate_data(query):
-    threading.Thread(target=lambda: asyncio.run(agent.search(query))).start()
-    while True:
-        event = response_queue.get()
+    for event in agent.search(query):
         yield f"data: {event}\n\n"
-        if type(event) == DoneEvent:
-            break
-        
 
 
 @app.route('/query')

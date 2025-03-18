@@ -1,6 +1,8 @@
+import json
+from cuid2 import Cuid
 from enum import Enum
+from .identity import Identity
 from typing import (
-    Annotated,
     Any,
     Literal,
     Mapping,
@@ -11,8 +13,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     ConfigDict,
-    Field,
-    TypeAdapter
+    Field
 )
 from ulid import ULID
 
@@ -48,9 +49,6 @@ class EventContentType(str, Enum):
 
 EventMetadata: TypeAlias = Mapping[str,
                                    Union[str, int, float, bool, list[str]]]
-
-
-StringKeyDict = Mapping[str, Any]
 
 
 class Event(BaseModel):
@@ -132,7 +130,6 @@ class TextChunkEvent(StreamEvent):
         min_length=0
     )
 
-
 class ErrorContent(BaseModel):
     """Error event content."""
     error_message: str = Field(
@@ -164,14 +161,3 @@ class DoneEvent(AtomicEvent):
     """A done event."""
     content_type: Literal[EventContentType.DONE] = EventContentType.DONE
     event_name: str = "done"
-
-
-ResponseEvent = Annotated[
-    Union[DocumentEvent, TextBlockEvent,
-          TextChunkEvent, ErrorEvent, DoneEvent],
-    Field(discriminator="content_type")
-]
-
-ResponseEventAdapter = TypeAdapter[ResponseEvent](ResponseEvent)
-ResponseEventListAdapter = TypeAdapter[list[ResponseEvent]](
-    list[ResponseEvent])

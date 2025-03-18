@@ -1,30 +1,28 @@
-from __future__ import annotations
-from ..interface.events import TextChunkEvent
-from ..interface.identity import Identity
-from ..interface.response_handler import StreamEventEmitter
-from queue import Queue
+from cuid2 import Cuid
+from .events import TextChunkEvent
+from .identity import Identity
 
 
-class QueueTextStream(StreamEventEmitter[str]):
+cuid_generator: Cuid = Cuid(length=10)
+
+
+class TextStream():
     def __init__(
         self,
         event_source: Identity,
-        event_name: str,
-        stream_id: str,
-        response_queue: Queue
+        event_name: str
     ):
+        cuid_generator: Cuid = Cuid(length=10)
         self._event_source = event_source
         self._event_name = event_name
-        self._stream_id = stream_id
-        self._response_queue = response_queue
+        self._stream_id = cuid_generator.generate()
         self._is_complete = False
 
 
-    async def emit_chunk(
+    def create_chunk(
         self, 
         chunk: str
-    ) -> QueueTextStream:
-        """Send a chunk of text to this stream."""
+    ) -> TextChunkEvent:
         if self._is_complete:
             raise Exception(
                 f"Cannot emit chunk to closed stream {self._stream_id}."
@@ -36,11 +34,10 @@ class QueueTextStream(StreamEventEmitter[str]):
             is_complete=False,
             content=chunk
         )
-        self._response_queue.put(event)
-        return self
+        return event
 
 
-    async def complete(self) -> None:
+    def complete(self) -> None:
         """Mark this stream as complete."""
         event = TextChunkEvent(
             source=self._event_source.id,
@@ -49,9 +46,7 @@ class QueueTextStream(StreamEventEmitter[str]):
             is_complete=True,
             content=" "
         )
-        self._response_queue.put(event)
-        self._is_complete = True
-        print("Stream complete")
+        return event
 
 
     @property
