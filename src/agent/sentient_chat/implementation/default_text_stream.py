@@ -1,32 +1,33 @@
 from __future__ import annotations
-from ..interface.events import TextChunkEvent
-from ..interface.identity import Identity
-from ..interface.response_handler import StreamEventEmitter
-from queue import Queue
+from src.agent.sentient_chat.interface.events import TextChunkEvent
+from src.agent.sentient_chat.interface.exceptions import TextStreamClosedError
+from src.agent.sentient_chat.interface.hook import Hook
+from src.agent.sentient_chat.interface.identity import Identity
+from src.agent.sentient_chat.interface.stream_event_emitter import StreamEventEmitter
 
 
-class QueueTextStream(StreamEventEmitter[str]):
+class DefaultTextStream(StreamEventEmitter[str]):
     def __init__(
         self,
         event_source: Identity,
         event_name: str,
         stream_id: str,
-        response_queue: Queue
+        hook: Hook
     ):
         self._event_source = event_source
         self._event_name = event_name
         self._stream_id = stream_id
-        self._response_queue = response_queue
+        self._hook = hook
         self._is_complete = False
 
 
     async def emit_chunk(
         self, 
         chunk: str
-    ) -> QueueTextStream:
+    ) -> DefaultTextStream:
         """Send a chunk of text to this stream."""
         if self._is_complete:
-            raise Exception(
+            raise TextStreamClosedError(
                 f"Cannot emit chunk to closed stream {self._stream_id}."
             )
         event = TextChunkEvent(
@@ -36,7 +37,7 @@ class QueueTextStream(StreamEventEmitter[str]):
             is_complete=False,
             content=chunk
         )
-        self._response_queue.put(event)
+        await self._hook.emit(event)
         return self
 
 
@@ -49,9 +50,8 @@ class QueueTextStream(StreamEventEmitter[str]):
             is_complete=True,
             content=" "
         )
-        self._response_queue.put(event)
+        await self._hook.emit(event)
         self._is_complete = True
-        print("Stream complete")
 
 
     @property

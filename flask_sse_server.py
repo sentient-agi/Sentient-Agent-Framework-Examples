@@ -6,6 +6,7 @@ from src.agent.agent import Agent
 from src.agent.sentient_chat.interface.identity import Identity
 from src.agent.sentient_chat.interface.events import DoneEvent
 
+
 app = Flask(__name__)
 response_queue=Queue()
 agent = Agent(

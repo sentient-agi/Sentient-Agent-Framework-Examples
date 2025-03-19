@@ -1,6 +1,12 @@
+from __future__ import annotations
+import inspect
 import json
 from cuid2 import Cuid
-from ..interface.response_handler import StreamEventEmitter
+from functools import wraps
+from src.agent.sentient_chat.interface.exceptions import (
+    AgentError,
+    ResponseStreamClosedError
+)
 from src.agent.sentient_chat.interface.events import (
     DocumentEvent,
     DoneEvent,
@@ -10,30 +16,62 @@ from src.agent.sentient_chat.interface.events import (
     TextBlockEvent,
     DEFAULT_ERROR_CODE
 )
+from src.agent.sentient_chat.interface.hook import Hook
 from src.agent.sentient_chat.interface.identity import Identity
-from queue import Queue
-from .queue_text_stream import QueueTextStream
+from src.agent.sentient_chat.interface.response_handler import StreamEventEmitter
+from src.agent.sentient_chat.implementation.default_text_stream import DefaultTextStream
 from typing import (
     Any,
+    Callable,
     Mapping,
     Optional,
     Union
 )
 
 
-class QueueResponseHandler:
+class DefaultResponseHandler:
     def __init__(
         self,
         source: Identity,
-        response_queue: Queue
+        hook: Hook
     ):
         self._source = source
         self._is_complete = False
-        self._response_queue = response_queue
+        self._hook = hook
         self._cuid_generator: Cuid = Cuid(length=10)
         self._streams: dict[str, StreamEventEmitter] = {}
 
+
+    @staticmethod
+    def __verify_response_stream_is_open(func: Callable):
+        """Check if the response stream is open."""
+        is_async_def = inspect.iscoroutinefunction(func)
+
+        @wraps(func)
+        async def async_wrapper(
+                handler: DefaultResponseHandler,
+                *args, **kwargs
+        ):
+            if handler.is_complete:
+                raise ResponseStreamClosedError(
+                    "Cannot send to a completed response handler."
+                )
+            return await func(handler, *args, **kwargs)
+
+        @wraps(func)
+        def sync_wrapper(
+                handler: DefaultResponseHandler,
+                *args, **kwargs
+        ):
+            if handler.is_complete:
+                raise RuntimeError(
+                    "Cannot send to a completed response handler."
+                )
+            return func(handler, *args, **kwargs)
+        return async_wrapper if is_async_def else sync_wrapper
     
+
+    @__verify_response_stream_is_open
     async def respond(
         self,
         event_name: str,
@@ -52,7 +90,7 @@ class QueueResponseHandler:
                 try:
                     json.dumps(response)
                 except TypeError as e:
-                    raise Exception(
+                    raise AgentError(
                         "Response content must be JSON serializable"
                     ) from e
                 event = DocumentEvent(
@@ -64,6 +102,7 @@ class QueueResponseHandler:
         await self.complete()
 
     
+    @__verify_response_stream_is_open
     async def __send_event_chunk(
         self, 
         chunk: StreamEvent
@@ -72,6 +111,7 @@ class QueueResponseHandler:
         await self.__emit_event(chunk)
 
     
+    @__verify_response_stream_is_open
     async def emit_json(
         self,
         event_name: str,
@@ -81,7 +121,7 @@ class QueueResponseHandler:
         try:
             json.dumps(data)
         except TypeError as e:
-            raise Exception(
+            raise AgentError(
                 "Response content must be JSON serializable"
             ) from e
         event = DocumentEvent(
@@ -89,10 +129,10 @@ class QueueResponseHandler:
             event_name=event_name,
             content=data
         )
-
         await self.__emit_event(event)
 
     
+    @__verify_response_stream_is_open
     async def emit_text_block(
         self, 
         event_name: str, 
@@ -106,18 +146,20 @@ class QueueResponseHandler:
         )
         await self.__emit_event(event)
 
-    
+
+    @__verify_response_stream_is_open
     def create_text_stream(
         self,
         event_name: str
-    ) -> QueueTextStream:
+    ) -> DefaultTextStream:
         """Create and return a new TextStream object."""
         stream_id = self._cuid_generator.generate()
-        stream = QueueTextStream(self._source, event_name, stream_id, self._response_queue)
+        stream = DefaultTextStream(self._source, event_name, stream_id, self._hook)
         self._streams[stream_id] = stream
         return stream
 
     
+    @__verify_response_stream_is_open
     async def emit_error(
         self,
         error_message: str,
@@ -160,4 +202,4 @@ class QueueResponseHandler:
 
     async def __emit_event(self, event) -> None:
         """Internal method to emit events."""
-        self._response_queue.put(event)
+        await self._hook.emit(event)
