@@ -18,7 +18,7 @@ from src.agent.sentient_chat.interface.events import (
 )
 from src.agent.sentient_chat.interface.hook import Hook
 from src.agent.sentient_chat.interface.identity import Identity
-from src.agent.sentient_chat.interface.response_handler import StreamEventEmitter
+from src.agent.sentient_chat.interface.stream_event_emitter import StreamEventEmitter
 from src.agent.sentient_chat.implementation.default_text_stream import DefaultTextStream
 from typing import (
     Any,
