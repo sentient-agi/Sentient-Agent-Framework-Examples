@@ -36,10 +36,10 @@ class DefaultResponseHandler:
         hook: Hook
     ):
         self._source = source
-        self._is_complete = False
         self._hook = hook
         self._cuid_generator: Cuid = Cuid(length=10)
         self._streams: dict[str, StreamEventEmitter] = {}
+        self._is_complete = False
 
 
     @staticmethod

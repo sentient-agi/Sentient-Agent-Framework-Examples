@@ -8,6 +8,7 @@ from typing import (
 from src.agent.sentient_chat.interface.events import DEFAULT_ERROR_CODE
 from src.agent.sentient_chat.interface.stream_event_emitter import StreamEventEmitter
 
+
 class ResponseHandler(Protocol):
     def respond(
             self,
