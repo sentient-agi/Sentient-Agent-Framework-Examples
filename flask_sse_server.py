@@ -1,12 +1,9 @@
 from flask import Flask, Response, request
-from queue import Queue
 from src.agent.agent import Agent
 from src.agent.sentient_chat.identity import Identity
 
 app = Flask(__name__)
-agent = Agent(
-    identity=Identity(id="SSE-Demo", name="SSE Demo"),
-)       
+agent = Agent(Identity(id="SSE-Demo", name="SSE Demo"))       
 
 
 def generate_data(query):

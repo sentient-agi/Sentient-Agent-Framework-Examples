@@ -1,21 +1,27 @@
-from cuid2 import Cuid
-from .events import TextChunkEvent
-from .identity import Identity
+from __future__ import annotations
+from src.agent.sentient_chat.exceptions import TextStreamClosedError
+from src.agent.sentient_chat.events import (
+    BaseEvent,
+    Event,
+    TextChunkEvent
+)
+from src.agent.sentient_chat.identity import Identity
+from src.agent.sentient_chat.id_handler import IdHandler
+from typing import cast
 
 
-cuid_generator: Cuid = Cuid(length=10)
-
-
-class TextStream():
+class TextStreamHandler():
     def __init__(
         self,
         event_source: Identity,
-        event_name: str
+        event_name: str,
+        event_id_handler: IdHandler,
+        stream_id: str,
     ):
-        cuid_generator: Cuid = Cuid(length=10)
         self._event_source = event_source
         self._event_name = event_name
-        self._stream_id = cuid_generator.generate()
+        self._event_id_handler = event_id_handler
+        self._stream_id = stream_id
         self._is_complete = False
 
 
@@ -23,8 +29,9 @@ class TextStream():
         self, 
         chunk: str
     ) -> TextChunkEvent:
+        """Send a chunk of text to this stream."""
         if self._is_complete:
-            raise Exception(
+            raise TextStreamClosedError(
                 f"Cannot emit chunk to closed stream {self._stream_id}."
             )
         event = TextChunkEvent(
@@ -34,10 +41,17 @@ class TextStream():
             is_complete=False,
             content=chunk
         )
+        return self.finalise_event(event)
+
+
+
+    def finalise_event(self, event: Event) -> BaseEvent:
+        event = cast(BaseEvent, event)
+        event.id = self._event_id_handler.create_next_id(event.id)
         return event
+    
 
-
-    def complete(self) -> None:
+    def complete(self) -> TextChunkEvent:
         """Mark this stream as complete."""
         event = TextChunkEvent(
             source=self._event_source.id,
@@ -46,7 +60,8 @@ class TextStream():
             is_complete=True,
             content=" "
         )
-        return event
+        self._is_complete = True
+        return self.finalise_event(event)
 
 
     @property

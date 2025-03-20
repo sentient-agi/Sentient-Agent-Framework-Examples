@@ -1,21 +1,13 @@
-import logging
 import os
 from dotenv import load_dotenv
-from queue import Queue
 from src.agent.providers.model_provider import ModelProvider
 from src.agent.providers.search_provider import SearchProvider
-from .sentient_chat.events import (
-    DocumentEvent,
-    TextBlockEvent,
-    DoneEvent
-)
-from .sentient_chat.identity import Identity
-from .sentient_chat.text_stream import TextStream
+from src.agent.sentient_chat.identity import Identity
+from src.agent.sentient_chat.response_handler import ResponseHandler
 from typing import Iterator
 
 
 load_dotenv()
-logger = logging.getLogger(__name__)
 
 
 class Agent:
@@ -32,57 +24,39 @@ class Agent:
             self,
             query: str
     ):
+        response_handler = ResponseHandler(self._identity)
         # Rephrase query for better search results
-        yield TextBlockEvent(
-            source=self._identity.id,
-            event_name="PLAN",
-            content="Rephrasing user query..."
+        yield response_handler.create_text_event(
+            "PLAN", "Rephrasing user query..."
         )
-        logger.info("Rephrasing user query...")
         rephrased_query = self.__rephrase_query(query)
-        yield TextBlockEvent(
-            source=self._identity.id,
+        yield response_handler.create_text_event(
             event_name="REPHRASE",
             content=f"Rephrased query: {rephrased_query}"
         )
-        logger.info(f"Rephrased query: {rephrased_query}")
 
         # Search for information
-        yield TextBlockEvent(
-            source=self._identity.id,
-            event_name="SEARCH",
-            content="Searching internet for results..."
+        yield response_handler.create_text_event(
+            "SEARCH", "Searching internet for results..."
         )
-        logger.info("Searching internet for results...")
         search_results = self._search_provider.search(rephrased_query)
-        logger.info(f"Search results: {search_results}")
         if len(search_results["results"]) > 0:
-            yield DocumentEvent(
-                source=self._identity.id,
-                event_name="SOURCES",
-                content={"results": search_results["results"]}
+            yield response_handler.create_json_event(
+                "SOURCES", {"results": search_results["results"]}
             )
         if len(search_results["images"]) > 0:
-            yield DocumentEvent(
-                source=self._identity.id,
-                event_name="IMAGES",
-                content={"images": search_results["images"]}
+            yield response_handler.create_json_event(
+                "IMAGES", {"images": search_results["images"]}
             )
 
         # Process search results
-        final_response_stream = TextStream(
-            event_source=self._identity,
+        final_response_stream = response_handler.create_text_stream(
             event_name="FINAL_RESPONSE"
         )
-        logger.info("Processing search results...")
         for chunk in self.__process_search_results(search_results["results"]):
             yield final_response_stream.create_chunk(chunk)
-        logger.info("Final response stream complete, completing stream...")
         yield final_response_stream.complete()
-        logger.info("Response complete, completing response handler...")
-        yield DoneEvent(
-            source=self._identity.id
-        )
+        yield response_handler.create_done_event()
 
 
     def __rephrase_query(
