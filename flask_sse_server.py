@@ -1,6 +1,6 @@
 from flask import Flask, Response, request
 from src.agent.agent import Agent
-from src.agent.sentient_chat.identity import Identity
+from src.agent.sentient_chat.interface.identity import Identity
 
 app = Flask(__name__)
 agent = Agent(Identity(id="SSE-Demo", name="SSE Demo"))       

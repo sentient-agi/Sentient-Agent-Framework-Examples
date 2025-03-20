@@ -1,12 +1,12 @@
 from __future__ import annotations
-from src.agent.sentient_chat.exceptions import TextStreamClosedError
-from src.agent.sentient_chat.events import (
+from src.agent.sentient_chat.interface.exceptions import TextStreamClosedError
+from src.agent.sentient_chat.interface.events import (
     BaseEvent,
     Event,
     TextChunkEvent
 )
-from src.agent.sentient_chat.identity import Identity
-from src.agent.sentient_chat.id_handler import IdHandler
+from src.agent.sentient_chat.interface.identity import Identity
+from src.agent.sentient_chat.implementation.id_handler import IdHandler
 from typing import cast
 
 
@@ -25,7 +25,7 @@ class TextStreamHandler():
         self._is_complete = False
 
 
-    def create_chunk(
+    def create_stream_chunk_event(
         self, 
         chunk: str
     ) -> TextChunkEvent:
@@ -41,17 +41,10 @@ class TextStreamHandler():
             is_complete=False,
             content=chunk
         )
-        return self.finalise_event(event)
+        return self.__finalise_event(event)
 
 
-
-    def finalise_event(self, event: Event) -> BaseEvent:
-        event = cast(BaseEvent, event)
-        event.id = self._event_id_handler.create_next_id(event.id)
-        return event
-    
-
-    def complete(self) -> TextChunkEvent:
+    def create_stream_complete_event(self) -> TextChunkEvent:
         """Mark this stream as complete."""
         event = TextChunkEvent(
             source=self._event_source.id,
@@ -61,7 +54,13 @@ class TextStreamHandler():
             content=" "
         )
         self._is_complete = True
-        return self.finalise_event(event)
+        return self.__finalise_event(event)
+
+
+    def __finalise_event(self, event: Event) -> BaseEvent:
+        event = cast(BaseEvent, event)
+        event.id = self._event_id_handler.create_next_id(event.id)
+        return event
 
 
     @property

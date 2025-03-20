@@ -2,8 +2,8 @@ from __future__ import annotations
 import json
 from cuid2 import Cuid
 from functools import wraps
-from src.agent.sentient_chat.exceptions import AgentError
-from src.agent.sentient_chat.events import (
+from src.agent.sentient_chat.interface.exceptions import AgentError
+from src.agent.sentient_chat.interface.events import (
     BaseEvent,
     DocumentEvent,
     DoneEvent,
@@ -13,9 +13,9 @@ from src.agent.sentient_chat.events import (
     TextBlockEvent,
     DEFAULT_ERROR_CODE
 )
-from src.agent.sentient_chat.identity import Identity
-from src.agent.sentient_chat.id_handler import IdHandler
-from src.agent.sentient_chat.text_stream_handler import TextStreamHandler
+from src.agent.sentient_chat.interface.identity import Identity
+from src.agent.sentient_chat.implementation.id_handler import IdHandler
+from src.agent.sentient_chat.implementation.text_stream_handler import TextStreamHandler
 from typing import (
     Any,
     Callable,
@@ -81,7 +81,7 @@ class ResponseHandler:
                     content=response
                 )
         self.complete()
-        return self.finalise_event(event)
+        return self.__finalise_event(event)
 
     
     @__verify_response_stream_is_open
@@ -102,7 +102,7 @@ class ResponseHandler:
             event_name=event_name,
             content=data
         )
-        return self.finalise_event(event)
+        return self.__finalise_event(event)
 
     
     @__verify_response_stream_is_open
@@ -117,11 +117,11 @@ class ResponseHandler:
             event_name=event_name,
             content=content
         )
-        return self.finalise_event(event)
+        return self.__finalise_event(event)
 
 
     @__verify_response_stream_is_open
-    def create_text_stream(
+    def create_text_stream_handler(
         self,
         event_name: str
     ) -> TextStreamHandler:
@@ -150,20 +150,8 @@ class ResponseHandler:
             event_name="error",
             content=error_content
         )
-        return self.finalise_event(event)
-
-
-    def finalise_event(self, event: Event) -> BaseEvent:
-        event = cast(BaseEvent, event)
-        event.id = self._id_handler.create_next_id(event.id)
-        return event
-
-
-    @property
-    def is_complete(self) -> bool:
-        """Return True if the response is complete."""
-        return self._is_complete
-
+        return self.__finalise_event(event)
+    
 
     def create_done_event(self) -> BaseEvent:
         """Mark all streams as complete and the response as finished."""
@@ -175,4 +163,16 @@ class ResponseHandler:
             if not stream.is_complete:
                 stream.complete()
         self._is_complete = True
-        return self.finalise_event(DoneEvent(source=self._source.id))
+        return self.__finalise_event(DoneEvent(source=self._source.id))
+
+
+    def __finalise_event(self, event: Event) -> BaseEvent:
+        event = cast(BaseEvent, event)
+        event.id = self._id_handler.create_next_id(event.id)
+        return event
+
+
+    @property
+    def is_complete(self) -> bool:
+        """Return True if the response is complete."""
+        return self._is_complete

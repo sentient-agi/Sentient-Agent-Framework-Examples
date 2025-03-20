@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 from src.agent.providers.model_provider import ModelProvider
 from src.agent.providers.search_provider import SearchProvider
-from src.agent.sentient_chat.identity import Identity
-from src.agent.sentient_chat.response_handler import ResponseHandler
+from src.agent.sentient_chat.interface.identity import Identity
+from src.agent.sentient_chat.implementation.response_handler import ResponseHandler
 from typing import Iterator
 
 
@@ -50,12 +50,12 @@ class Agent:
             )
 
         # Process search results
-        final_response_stream = response_handler.create_text_stream(
+        text_stream_handler = response_handler.create_text_stream_handler(
             event_name="FINAL_RESPONSE"
         )
         for chunk in self.__process_search_results(search_results["results"]):
-            yield final_response_stream.create_chunk(chunk)
-        yield final_response_stream.complete()
+            yield text_stream_handler.create_stream_chunk_event(chunk)
+        yield text_stream_handler.create_stream_complete_event()
         yield response_handler.create_done_event()
 
 
