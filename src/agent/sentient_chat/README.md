@@ -1,6 +1,7 @@
-# SentientChat
-
 ## ResponseHandler
+In addition to supporting OpenAI API compatible agents, SentientChat supports a custom, open source event system for agent responses. These events can be rendered in SentientChat to provide a richer user experience. This particularly useful for streaming responses from an AI agent, when you might want to show the agent's work while the response is being generated, rather than having the user wait for the final response. This python package can be used to build agents that serve SentientChat events.
+
+## Quickstart
 The `ResponseHandler` is responsible for creating events to send to the SentientChat client. It abstracts away the event system and provides a simple interface for sending events to the client. It is initialized with your agent's SentientChat `Identity` and with a `Hook` that is to direct the events to the client:
 
 ```python
@@ -21,26 +22,26 @@ yield response_handler.emit_text_block(
 ```
 
 JSON events are used to send a JSON object to the client.
-```
+```python
 yield response_handler.emit_json(
     "SOURCES", {"results": search_results["results"]}
 )
 ```
 
 Error events are used to send an error message to the client.
-```
+```python
 yield response_handler.emit_error(
     "ERROR", {"message": "An error occurred"}
 )
 ```
 
 At the end of a response, you should call `complete` to signal the end of the response. This will emit a `DoneEvent` using the `Hook`.
-```
+```python
 response_handler.complete()
 ```
 
 To stream a longer response piece by piece, you can use the `create_text_stream_handler` method. This returns a `TextStreamHandler` object that you can use to stream text to the client using the `create_stream_chunk_event` method. You must call `create_stream_complete_event` when you are done streaming.
-```
+```python
 final_response_stream = response_handler.create_text_stream(
     "FINAL_RESPONSE"
     )
@@ -52,11 +53,7 @@ await final_response_stream.complete()
 The code snippets above are from an example search agent that can be found [here](https://github.com/sentient-xyz/Search-Agent-SSE-Example).
 
 
-## Technical Details
-#### Identity
-SentientChat uses an `Identity` object to identify the source of an event (typically an agent). It contains an `id` and a `name`.
-
-#### Events
+## Events
 SentientChat uses a custom event system for agent responses. This is particularly useful for streaming responses from an AI agent, when you might want to show the agent's work while the response is being generated, rather than having the user wait for the final response.
 
 1. **Atomic Events** (single, complete messages):
