@@ -1,4 +1,4 @@
-from src.agent.sentient_agent.interface.events import Event
+from src.agent.sentient_agent_framework.interface.events import Event
 from typing import Protocol
 
 

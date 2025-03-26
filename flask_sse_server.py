@@ -3,8 +3,8 @@ import threading
 from flask import Flask, Response, request
 from queue import Queue
 from src.agent.agent import Agent
-from src.agent.sentient_agent.interface.identity import Identity
-from src.agent.sentient_agent.interface.events import DoneEvent
+from src.agent.sentient_agent_framework.interface.identity import Identity
+from src.agent.sentient_agent_framework.interface.events import DoneEvent
 
 
 app = Flask(__name__)

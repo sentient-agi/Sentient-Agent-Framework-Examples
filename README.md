@@ -25,26 +25,26 @@
 <!-- Github Repo Info -->
 <p align="center">
     <!-- Release -->
-    <a href="https://github.com/sentient-agi/Sentient-Agent-Examples/releases">
+    <a href="https://github.com/sentient-agi/Sentient-Agent-Framework-Examples/releases">
         <img alt="GitHub release" src="https://img.shields.io/badge/Release-Beta-yellow">
     </a>
     <!-- License -->
-    <a href="https://github.com/sentient-agi/Sentient-Agent-Examples/tree/main?tab=Apache-2.0-1-ov-file">
+    <a href="https://github.com/sentient-agi/Sentient-Agent-Framework-Examples/tree/main?tab=Apache-2.0-1-ov-file">
         <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-green">
     </a>
 </p>
 
 
-<h1 align="center">Sentient Agent Examples</h1>
+<h1 align="center">Sentient Agent Framework Examples</h1>
 
 In addition to supporting OpenAI API compatible agents, Sentient Chat supports a custom, open source event system for agent responses. These events can be rendered in Sentient Chat to provide a richer user experience. This particularly useful for streaming responses from an AI agent, when you might want to show the agent's work while the response is being generated, rather than having the user wait for the final response. Documentation for the event system is not yet publically available, but it is coming soon.
 
-This repo will contain examples of simple agents that serve Sentient Chat events. The first example is a search agent. It uses a Flask server that can be used to query the agent and that streams the agent's response (events) to a client using Server-Sent Events (SSE). **The most important part of the example is the `agent.py` file, which demonstrates how to create and serve Sentient Chat events.**
+This repo will contain examples of simple agents that serve Sentient Chat events using the [Sentient Agent Framework](https://github.com/sentient-agi/Sentient-Agent-Framework). The first example is a search agent. It uses a Flask server that can be used to query the agent and that streams the agent's response (events) to a client using Server-Sent Events (SSE). **The most important part of the example is the `agent.py` file, which demonstrates how to create and serve Sentient Chat events.**
 
 ## Creating and serving Sentient Chat events
 
 > [!NOTE]
-> **A python package for Sentient Chat events is currently in beta and is available on TestPyPI. The repo can be found [here](https://github.com/sentient-agi/Sentient-Agent).**
+> **A python package that provides an agent framework for builing agents that serve Sentient Chat events is currently in beta and is available on [TestPyPI](https://test.pypi.org/project/sentient-agent-framework/). The framework/pacakge repo can be found [here](https://github.com/sentient-agi/Sentient-Agent).**
 
 To understand how to create and serve Sentient Chat events, review `agent.py`. A `ResponseHandler` is responsible for creating the events to send to the Sentient Chat client. It abstracts away the event system and provides a simple interface for sending events to the client. It is initialized with your agent's Sentient Chat `Identity` and with a `Hook` that is used to direct the events to the client.
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
-from src.agent.sentient_agent.interface.events import TextChunkEvent
-from src.agent.sentient_agent.interface.exceptions import TextStreamClosedError
-from src.agent.sentient_agent.interface.hook import Hook
-from src.agent.sentient_agent.interface.identity import Identity
-from src.agent.sentient_agent.interface.stream_event_emitter import StreamEventEmitter
+from src.agent.sentient_agent_framework.interface.events import TextChunkEvent
+from src.agent.sentient_agent_framework.interface.exceptions import TextStreamClosedError
+from src.agent.sentient_agent_framework.interface.hook import Hook
+from src.agent.sentient_agent_framework.interface.identity import Identity
+from src.agent.sentient_agent_framework.interface.stream_event_emitter import StreamEventEmitter
 
 
 class DefaultTextStream(StreamEventEmitter[str]):

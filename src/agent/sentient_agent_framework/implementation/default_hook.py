@@ -1,9 +1,9 @@
 from asyncio import wait_for
 from queue import Queue
-from src.agent.sentient_agent.implementation.id_generator import (
+from src.agent.sentient_agent_framework.implementation.id_generator import (
     IdGenerator
 )
-from src.agent.sentient_agent.interface.events import (
+from src.agent.sentient_agent_framework.interface.events import (
     BaseEvent,
     Event
 )
