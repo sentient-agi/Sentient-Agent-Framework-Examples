@@ -22,8 +22,16 @@ class Agent:
     ):
         self._identity = identity
         self._response_queue = response_queue
-        self._model_provider = ModelProvider(api_key=os.getenv("MODEL_API_KEY"))
-        self._search_provider = SearchProvider(api_key=os.getenv("TAVILY_API_KEY"))
+
+        model_api_key=os.getenv("MODEL_API_KEY")
+        if not model_api_key:
+            raise ValueError("MODEL_API_KEY is not set")
+        self._model_provider = ModelProvider(api_key=model_api_key)
+
+        search_api_key=os.getenv("TAVILY_API_KEY")
+        if not search_api_key:
+            raise ValueError("TAVILY_API_KEY is not set") 
+        self._search_provider = SearchProvider(api_key=search_api_key)
 
 
     async def search(
