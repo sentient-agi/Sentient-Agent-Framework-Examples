@@ -3,11 +3,11 @@ import inspect
 import json
 from cuid2 import Cuid
 from functools import wraps
-from src.agent.sentient_chat.interface.exceptions import (
+from src.agent.sentient_agent.interface.exceptions import (
     AgentError,
     ResponseStreamClosedError
 )
-from src.agent.sentient_chat.interface.events import (
+from src.agent.sentient_agent.interface.events import (
     DocumentEvent,
     DoneEvent,
     ErrorContent,
@@ -16,10 +16,10 @@ from src.agent.sentient_chat.interface.events import (
     TextBlockEvent,
     DEFAULT_ERROR_CODE
 )
-from src.agent.sentient_chat.interface.hook import Hook
-from src.agent.sentient_chat.interface.identity import Identity
-from src.agent.sentient_chat.interface.stream_event_emitter import StreamEventEmitter
-from src.agent.sentient_chat.implementation.default_text_stream import DefaultTextStream
+from src.agent.sentient_agent.interface.hook import Hook
+from src.agent.sentient_agent.interface.identity import Identity
+from src.agent.sentient_agent.interface.stream_event_emitter import StreamEventEmitter
+from src.agent.sentient_agent.implementation.default_text_stream import DefaultTextStream
 from typing import (
     Any,
     Callable,
