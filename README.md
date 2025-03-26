@@ -41,34 +41,39 @@ In addition to supporting OpenAI API compatible agents, SentientChat supports a 
 
 This is a simple example demonstrating how to set up a search agent that serves SentientChat events. It uses a Flask server that can be used to query a search agent and that streams the agent's response (events) to a client using Server-Sent Events (SSE). **The most important part of the example is the `agent.py` file, which demonstrates how to create and serve SentientChat events.**
 
+## Creating and serving SentientChat events
+
 > [!NOTE]
 > **A python package for SentientChat events is currently under development. This example will be updated when the package is released.**
 
-## Creating and serving SentientChat events
-To understand how to create and serve SentientChat events, review `agent.py`. A `ResponseHandler` is responsible for creating events to send to the SentientChat client. It abstracts away the event system and provides a simple interface for sending events to the client. It is initialized with your agent's SentientChat `Identity` and with a `Hook` that is used to direct the events to the client.
+To understand how to create and serve SentientChat events, review `agent.py`. A `ResponseHandler` is responsible for creating the events to send to the SentientChat client. It abstracts away the event system and provides a simple interface for sending events to the client. It is initialized with your agent's SentientChat `Identity` and with a `Hook` that is used to direct the events to the client.
 
-A new `ResponseHandler` is initialized with an agent's `Identity` and a `Hook` for every agent query (`agent.py` line 33):
+#### Initializing a ResponseHandler
+A `ResponseHandler` is initialized with an agent's `Identity` and a `Hook`. A new `ResponseHandler` is created for every agent query. See `agent.py` line 33:
 
 ```python
 response_handler = DefaultResponseHandler(self._identity, DefaultHook(self._response_queue))
 ```
 
-Once initialized, the `ResponseHandler` is usedto create events that are emitted using the `Hook`. 
+Once initialized, the `ResponseHandler` is used to create events that are emitted using the `Hook`. 
 
-Text events are used to send single, complete messages to the client (`agent.py` lines 36-38):
+#### Emitting text events
+Text events are used to send single, complete messages to the client. See `agent.py` lines 36-38:
 ```python
 await response_handler.emit_text_block(
     "PLAN", "Rephrasing user query..."
 )
 ```
 
-JSON events are used to send JSON objects to the client (`agent.py` lines 50-52):
+#### Emitting JSON events
+JSON events are used to send JSON objects to the client. See `agent.py` lines 50-52:
 ```python
 await response_handler.emit_json(
     "SOURCES", {"results": search_results["results"]}
 )
 ```
 
+#### Emitting error events
 Error events are used to send error messages to the client (no example in `agent.py`):
 ```python
 await response_handler.emit_error(
@@ -76,12 +81,14 @@ await response_handler.emit_error(
 )
 ```
 
-At the end of a response, `response_handler.complete()` is called to signal the end of the response (this will emit a `DoneEvent` using the `Hook`) (`agent.py` line 65):
+#### Completing a response
+At the end of a response, `response_handler.complete()` is called to signal the end of the response (this will emit a `DoneEvent` using the `Hook`). See `agent.py` line 65:
 ```python
 await response_handler.complete()
 ```
 
-To stream a longer response one chunk at a time, use the `response_handler.create_text_stream` method. This returns a `StreamEventEmitter` that can be used to stream text to the client using the `emit_chunk` method (`agent.py` lines 59-63):
+#### Emitting a stream of text chunks
+To stream a longer response one chunk at a time, use the `response_handler.create_text_stream` method. This returns a `StreamEventEmitter` that can be used to stream text to the client using the `emit_chunk` method. See `agent.py` lines 59-63:
 ```python
 final_response_stream = response_handler.create_text_stream(
     "FINAL_RESPONSE"
@@ -90,12 +97,13 @@ for chunk in self.__process_search_results(search_results["results"]):
     await final_response_stream.emit_chunk(chunk)
 ```
 
-At the end of the stream, `final_response_stream.complete()` is called to signal the end of the stream (this will emit a `TextChunkEvent` with `is_complete=True`) (`agent.py` line 64):
+#### Completing a stream
+At the end of the stream, `final_response_stream.complete()` is called to signal the end of the stream (this will emit a `TextChunkEvent` with `is_complete=True`). See `agent.py` line 64:
 ```python
 await final_response_stream.complete()
 ```
 
-## Running the example agent
+## Running the search agent
 > [!NOTE]
 > **These instructions are for unix-based systems (i.e. MacOS, Linux). Before you proceed, make sure that you have installed `python` and `pip`. If you have not, follow [these](https://packaging.python.org/en/latest/tutorials/installing-packages/) instructions to do so.**
 
@@ -141,6 +149,8 @@ curl --location --request GET 'http://127.0.0.1:5000/query' \
 ```
 Expected output:
 ```
+
+data: content_type=<EventContentType...
 
 data: content_type=<EventContentType...
 
