@@ -4,9 +4,10 @@ from dotenv import load_dotenv
 from queue import Queue
 from src.agent.providers.model_provider import ModelProvider
 from src.agent.providers.search_provider import SearchProvider
-from src.agent.sentient_agent_framework.implementation.default_response_handler import DefaultResponseHandler
-from src.agent.sentient_agent_framework.implementation.default_hook import DefaultHook
-from src.agent.sentient_agent_framework.interface.identity import Identity
+from sentient_agent_framework import (
+    DefaultResponseHandler,
+    DefaultHook,
+    Identity)
 from typing import Iterator
 
 
