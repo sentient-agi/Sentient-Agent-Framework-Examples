@@ -40,33 +40,46 @@
 > [!WARNING]
 > **These agents are for demonstration purposes only and are not suitable for production use.**
 
-In addition to supporting OpenAI API compatible agents, Sentient Chat supports a custom, open source event system for agent responses. These events can be rendered in Sentient Chat to provide a richer user experience. This particularly useful for streaming responses from an AI agent, when you might want to show the agent's work while the response is being generated, rather than having the user wait for the final response. Documentation for the event system is not yet publically available, but it is coming soon.
+In addition to supporting OpenAI API compatible agents, Sentient Chat supports a custom, open source event system for agent responses. These events can be rendered in Sentient Chat to provide a richer user experience. This particularly useful for streaming responses from an AI agent, when you might want to show the agent's work while the response is being generated, rather than having the user wait for the final response.
 
-This repo will contain examples of simple agents that serve Sentient Chat events using the [Sentient Agent Framework](https://github.com/sentient-agi/Sentient-Agent-Framework). The first example is a search agent. It uses a Flask server that can be used to query the agent and that streams the agent's response (events) to a client using Server-Sent Events (SSE). **The most important part of the example is the `agent.py` file, which demonstrates how to create and serve Sentient Chat events.**
+This repo will contain examples of simple agents that serve Sentient Chat events using the [Sentient Agent Framework](https://github.com/sentient-agi/Sentient-Agent-Framework). The first example is a search agent. **The most important part of the example is the `search_agent.py` file, which demonstrates how to subclass the `BaseAgent` class, implement the `assist` method, and create and serve Sentient Chat events.**
 
 ## Creating and serving Sentient Chat events
 
 > [!NOTE]
 > **A python package that provides an agent framework for builing agents that serve Sentient Chat events is currently in beta and is available on [PyPI](https://pypi.org/project/sentient-agent-framework/). The framework/pacakge repo can be found [here](https://github.com/sentient-agi/Sentient-Agent).**
 
-To understand how to create and serve Sentient Chat events, review `agent.py`. A `ResponseHandler` is responsible for creating the events to send to the Sentient Chat client. It abstracts away the event system and provides a simple interface for sending events to the client. It is initialized with your agent's Sentient Chat `Identity` and with a `Hook` that is used to direct the events to the client.
+To understand how to create and serve Sentient Chat events, review `search_agent.py`. The `SearchAgent` class subclasses the `BaseAgent` class and implements the `assist` method. In the `assist` method a `ResponseHandler` is responsible for creating the events to send to the Sentient Chat client. It abstracts away the event system and provides a simple interface for sending events to the client.
 
 #### Installing the Sentient Agent Framework
 ```
 pip install sentient-agent-framework
 ```
 
-#### Initializing a ResponseHandler
-A `ResponseHandler` is initialized with an agent's `Identity` and a `Hook`. A new `ResponseHandler` is created for every agent query. See `agent.py` line 33:
-
+#### Subclassing the `BaseAgent` class
 ```python
-response_handler = DefaultResponseHandler(self._identity, DefaultHook(self._response_queue))
+from sentient_agent_framework import BaseAgent
+
+class SearchAgent(BaseAgent):
+    def __init__(self, identity: Identity):
+        super().__init__(identity)
 ```
 
-Once initialized, the `ResponseHandler` is used to create events that are emitted using the `Hook`. 
+#### Implementing the `assist` method
+```python
+async def assist(
+        self,
+        session: Session,
+        query: Query,
+        response_handler: ResponseHandler
+):
+    # Implement your agent logic here
+```
+
+Within the `assist` method, the `ResponseHandler` is used to emit events to the client. 
 
 #### Emitting text events
-Text events are used to send single, complete messages to the client. See `agent.py` lines 36-38:
+Text events are used to send single, complete messages to the client. See `search_agent.py` lines 46-48:
 ```python
 await response_handler.emit_text_block(
     "PLAN", "Rephrasing user query..."
@@ -74,7 +87,7 @@ await response_handler.emit_text_block(
 ```
 
 #### Emitting JSON events
-JSON events are used to send JSON objects to the client. See `agent.py` lines 50-52:
+JSON events are used to send JSON objects to the client. See `search_agent.py` lines 60-62:
 ```python
 await response_handler.emit_json(
     "SOURCES", {"results": search_results["results"]}
@@ -82,7 +95,7 @@ await response_handler.emit_json(
 ```
 
 #### Emitting error events
-Error events are used to send error messages to the client (no example in `agent.py`):
+Error events are used to send error messages to the client (no example in `search_agent.py`):
 ```python
 await response_handler.emit_error(
     "ERROR", {"message": "An error occurred"}
@@ -90,13 +103,13 @@ await response_handler.emit_error(
 ```
 
 #### Completing a response
-At the end of a response, `response_handler.complete()` is called to signal the end of the response (this will emit a `DoneEvent` using the `Hook`). See `agent.py` line 65:
+At the end of a response, `response_handler.complete()` is called to signal the end of the response (this will emit a `DoneEvent`). See `search_agent.py` line 75:
 ```python
 await response_handler.complete()
 ```
 
 #### Emitting a stream of text chunks
-To stream a longer response one chunk at a time, use the `response_handler.create_text_stream` method. This returns a `StreamEventEmitter` that can be used to stream text to the client using the `emit_chunk` method. See `agent.py` lines 59-63:
+To stream a longer response one chunk at a time, use the `response_handler.create_text_stream` method. This returns a `StreamEventEmitter` that can be used to stream text to the client using the `emit_chunk` method. See `search_agent.py` lines 69-73:
 ```python
 final_response_stream = response_handler.create_text_stream(
     "FINAL_RESPONSE"
@@ -106,7 +119,7 @@ for chunk in self.__process_search_results(search_results["results"]):
 ```
 
 #### Completing a stream
-At the end of the stream, `final_response_stream.complete()` is called to signal the end of the stream (this will emit a `TextChunkEvent` with `is_complete=True`). See `agent.py` line 64:
+At the end of the stream, `final_response_stream.complete()` is called to signal the end of the stream (this will emit a `TextChunkEvent` with `is_complete=True`). See `search_agent.py` line 74:
 ```python
 await final_response_stream.complete()
 ```
@@ -142,25 +155,25 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-#### 7. Run the server:
+#### 7. Run the search agent:
 ```
-python3 flask_sse_server.py
+python3 -m src.search_agent.search_agent
 ```
 
-#### 8. Use a tool like [CuRL](https://curl.se/) or [Postman](https://www.postman.com/) to query the server. It exposes a single `:query` endpoint that can be used to query the agent:
+#### 8. Use a tool like [CuRL](https://curl.se/) or [Postman](https://www.postman.com/) to query the server. The agent exposes a single `assist` endpoint:
 ```
-curl --location --request GET 'http://127.0.0.1:5000/query' \
+curl --location --request GET 'http://127.0.0.1:5000/assist' \
 --header 'Content-Type: application/json' \
 --data '{
-    "query": "Who is Lionel Messi?"
+    "query": {
+        "id": "01JQETZTSNT4KC0TRS6EBN32TG",
+        "prompt": "Who is Lionel Messi?"
+    }
 }'
 ```
 Expected output:
 ```
-
 data: content_type=<EventContentType...
-
 data: content_type=<EventContentType...
-
 ... 
 ```

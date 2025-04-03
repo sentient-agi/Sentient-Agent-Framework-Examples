@@ -1,45 +1,46 @@
 import logging
 import os
 from dotenv import load_dotenv
-from queue import Queue
-from src.agent.providers.model_provider import ModelProvider
-from src.agent.providers.search_provider import SearchProvider
+from src.search_agent.providers.model_provider import ModelProvider
+from src.search_agent.providers.search_provider import SearchProvider
 from sentient_agent_framework import (
-    DefaultResponseHandler,
-    DefaultHook,
-    Identity)
+    BaseAgent,
+    Identity,
+    Session,
+    Query,
+    ResponseHandler)
 from typing import Iterator
 
 
 load_dotenv()
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
-class Agent:
+class SearchAgent(BaseAgent):
     def __init__(
             self,
-            identity: Identity,
-            response_queue: Queue
+            identity: Identity
     ):
-        self._identity = identity
-        self._response_queue = response_queue
+        super().__init__(identity)
 
-        model_api_key=os.getenv("MODEL_API_KEY")
+        model_api_key = os.getenv("MODEL_API_KEY")
         if not model_api_key:
             raise ValueError("MODEL_API_KEY is not set")
         self._model_provider = ModelProvider(api_key=model_api_key)
 
-        search_api_key=os.getenv("TAVILY_API_KEY")
+        search_api_key = os.getenv("TAVILY_API_KEY")
         if not search_api_key:
             raise ValueError("TAVILY_API_KEY is not set") 
         self._search_provider = SearchProvider(api_key=search_api_key)
 
 
-    async def search(
+    async def assist(
             self,
-            query: str
+            session: Session,
+            query: Query,
+            response_handler: ResponseHandler
     ):
-        response_handler = DefaultResponseHandler(self._identity, DefaultHook(self._response_queue))
         """Search the internet for information."""
         # Rephrase query for better search results
         await response_handler.emit_text_block(
@@ -92,3 +93,8 @@ class Agent:
         process_search_results_query = f"Summarise the following search results: {search_results}"
         for chunk in self._model_provider.query_stream(process_search_results_query):
             yield chunk
+
+
+if __name__ == "__main__":
+    agent = SearchAgent(identity=Identity(id="Search-Demo", name="Search Demo"))
+    agent.run_server()
