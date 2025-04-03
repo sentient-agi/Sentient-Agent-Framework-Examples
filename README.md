@@ -162,7 +162,7 @@ python3 -m src.search_agent.search_agent
 
 #### 8. Use a tool like [CuRL](https://curl.se/) or [Postman](https://www.postman.com/) to query the server. The agent exposes a single `assist` endpoint:
 ```
-curl --location --request GET 'http://127.0.0.1:5000/assist' \
+curl --location 'http://127.0.0.1:5000/assist' \
 --header 'Content-Type: application/json' \
 --data '{
     "query": {
