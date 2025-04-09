@@ -168,12 +168,24 @@ curl --location 'http://127.0.0.1:5000/assist' \
     "query": {
         "id": "01JQETZTSNT4KC0TRS6EBN32TG",
         "prompt": "Who is Lionel Messi?"
+    },
+    "session" : {
+        "processor_id": "Example processor ID",
+        "activity_id": "01JR8SXE9B92YDKKNMYHYFZY1T",
+        "request_id": "01JR8SY5PHB9X2FET1QRXGZW76",
+        "interactions": []
     }
 }'
 ```
 Expected output:
 ```
-data: content_type=<EventContentType...
-data: content_type=<EventContentType...
+event: PLAN
+data: content_type=<EventContentType.TEXTBLOCK: 'atomic.textblock'> event_name='PLAN' schema_version='1.0' id=ULID(01JR8WMY9J2GGZY9D33H69GVY2) source='Example processor ID' metadata=None content='Rephrasing user query...'
+
+event: REPHRASE
+data: content_type=<EventContentType.TEXTBLOCK: 'atomic.textblock'> event_name='REPHRASE' schema_version='1.0' id=ULID(01JR8WN1JC741RX13KVN7Y9EZ7) source='Example processor ID' metadata=None content='Rephrased query: Lionel Messi is a fucking legend, the GOAT of soccer. Born in Argentina, he’s been dominating the sport since he was a kid. Six Ballon d’Or awards, ten La Liga titles, and four UEFA Champions League trophies later, he’s still out here breaking records like it’s his job—oh wait, it is. And let’s not forget that insane move to Paris Saint-Germain. The man is a wizard with a ball at his feet, and his name is synonymous with greatness.'
+
+event: SEARCH
+data: content_type=<EventContentType.TEXTBLOCK: 'atomic.textblock'> event_name='SEARCH' schema_version='1.0' id=ULID(01JR8WN1JCM604FKT5BZHV0W9S) source='Example processor ID' metadata=None content='Searching internet for results...'
 ... 
 ```

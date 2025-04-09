@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from src.search_agent.providers.model_provider import ModelProvider
 from src.search_agent.providers.search_provider import SearchProvider
 from sentient_agent_framework import (
-    BaseAgent,
-    Identity,
+    AbstractAgent,
+    DefaultServer,
     Session,
     Query,
     ResponseHandler)
@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class SearchAgent(BaseAgent):
+class SearchAgent(AbstractAgent):
     def __init__(
             self,
-            identity: Identity
+            name: str
     ):
-        super().__init__(identity)
+        super().__init__(name)
 
         model_api_key = os.getenv("MODEL_API_KEY")
         if not model_api_key:
@@ -35,6 +35,7 @@ class SearchAgent(BaseAgent):
         self._search_provider = SearchProvider(api_key=search_api_key)
 
 
+    # Implement the assist method as required by the AbstractAgent class
     async def assist(
             self,
             session: Session,
@@ -47,6 +48,7 @@ class SearchAgent(BaseAgent):
             "PLAN", "Rephrasing user query..."
         )
         rephrased_query = self.__rephrase_query(query)
+        # Use response handler to emit text blocks to the client
         await response_handler.emit_text_block(
             "REPHRASE", f"Rephrased query: {rephrased_query}"
         )
@@ -57,21 +59,28 @@ class SearchAgent(BaseAgent):
         )
         search_results = self._search_provider.search(rephrased_query)
         if len(search_results["results"]) > 0:
+            # Use response handler to emit JSON to the client
             await response_handler.emit_json(
                 "SOURCES", {"results": search_results["results"]}
             )
         if len(search_results["images"]) > 0:
+            # Use response handler to emit JSON to the client
             await response_handler.emit_json(
                 "IMAGES", {"images": search_results["images"]}
             )
 
         # Process search results
+        # Use response handler to create a text stream to stream the final 
+        # response to the client
         final_response_stream = response_handler.create_text_stream(
             "FINAL_RESPONSE"
             )
         for chunk in self.__process_search_results(search_results["results"]):
+            # Use the text stream to emit chunks of the final response to the client
             await final_response_stream.emit_chunk(chunk)
+        # Mark the text stream as complete
         await final_response_stream.complete()
+        # Mark the response as complete
         await response_handler.complete()
 
 
@@ -96,5 +105,9 @@ class SearchAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    agent = SearchAgent(identity=Identity(id="Search-Demo", name="Search Demo"))
-    agent.run_server()
+    # Create an instance of a SearchAgent
+    agent = SearchAgent(name="Search Agent")
+    # Create a server to handle requests to the agent
+    server = DefaultServer(agent)
+    # Run the server
+    server.run()
