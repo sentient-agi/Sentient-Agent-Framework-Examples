@@ -9,7 +9,7 @@ from sentient_agent_framework import (
     Session,
     Query,
     ResponseHandler)
-from typing import Iterator
+from typing import AsyncIterator
 
 
 load_dotenv()
@@ -47,7 +47,7 @@ class SearchAgent(AbstractAgent):
         await response_handler.emit_text_block(
             "PLAN", "Rephrasing user query..."
         )
-        rephrased_query = self.__rephrase_query(query)
+        rephrased_query = await self.__rephrase_query(query)
         # Use response handler to emit text blocks to the client
         await response_handler.emit_text_block(
             "REPHRASE", f"Rephrased query: {rephrased_query}"
@@ -57,7 +57,7 @@ class SearchAgent(AbstractAgent):
         await response_handler.emit_text_block(
             "SEARCH", "Searching internet for results..."
         )
-        search_results = self._search_provider.search(rephrased_query)
+        search_results = await self._search_provider.search(rephrased_query)
         if len(search_results["results"]) > 0:
             # Use response handler to emit JSON to the client
             await response_handler.emit_json(
@@ -75,7 +75,7 @@ class SearchAgent(AbstractAgent):
         final_response_stream = response_handler.create_text_stream(
             "FINAL_RESPONSE"
             )
-        for chunk in self.__process_search_results(search_results["results"]):
+        async for chunk in self.__process_search_results(search_results["results"]):
             # Use the text stream to emit chunks of the final response to the client
             await final_response_stream.emit_chunk(chunk)
         # Mark the text stream as complete
@@ -84,23 +84,23 @@ class SearchAgent(AbstractAgent):
         await response_handler.complete()
 
 
-    def __rephrase_query(
+    async def __rephrase_query(
             self,
             query: str
     ) -> str:
         """Rephrase the query for better search results."""
         rephrase_query = f"Rephrase the following query for better search results: {query}"
-        rephrase_query_response = self._model_provider.query(rephrase_query)
+        rephrase_query_response = await self._model_provider.query(rephrase_query)
         return rephrase_query_response
     
 
-    def __process_search_results(
+    async def __process_search_results(
             self, 
             search_results: dict
-    ) -> Iterator[str]:
+    ) -> AsyncIterator[str]:
         """Process the search results."""
         process_search_results_query = f"Summarise the following search results: {search_results}"
-        for chunk in self._model_provider.query_stream(process_search_results_query):
+        async for chunk in self._model_provider.query_stream(process_search_results_query):
             yield chunk
 
 

@@ -1,16 +1,16 @@
-from tavily import TavilyClient
+from tavily import AsyncTavilyClient
 
 class SearchProvider:
     def __init__(
             self,
             api_key: str
     ):
-        self.client = TavilyClient(api_key=api_key)
+        self.client = AsyncTavilyClient(api_key=api_key)
 
 
-    def search(
+    async def search(
             self,
             query: str
     ) -> dict:
-        results = self.client.search(query)
+        results = await self.client.search(query)
         return results

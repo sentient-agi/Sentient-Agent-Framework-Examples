@@ -1,7 +1,7 @@
-import openai
 from datetime import datetime
 from langchain_core.prompts import PromptTemplate
-from typing import Iterator
+from openai import AsyncOpenAI
+from typing import AsyncIterator
 
 class ModelProvider:
     def __init__(
@@ -24,7 +24,7 @@ class ModelProvider:
         self.date_context = datetime.now().strftime("%Y-%m-%d")
 
         # Set up model API
-        self.client = openai.OpenAI(
+        self.client = AsyncOpenAI(
             base_url=self.base_url,
             api_key=self.api_key,
         )
@@ -40,10 +40,10 @@ class ModelProvider:
             self.system_prompt = self.system_prompt
 
 
-    def query_stream(
+    async def query_stream(
         self,
         query: str
-    ) -> Iterator[str]:
+    ) -> AsyncIterator[str]:
         """Sends query to model and yields the response in chunks."""
 
         if self.model in ["o1-preview", "o1-mini"]:
@@ -57,7 +57,7 @@ class ModelProvider:
                 {"role": "user", "content": query}
             ]
 
-        stream = self.client.chat.completions.create(
+        stream = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             stream=True,
@@ -65,19 +65,19 @@ class ModelProvider:
             max_tokens=self.max_tokens
         )
 
-        for chunk in stream:
+        async for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
 
 
-    def query(
+    async def query(
         self,
         query: str
     ) -> str:
         """Sends query to model and returns the complete response as a string."""
         
         chunks = []
-        for chunk in self.query_stream(query=query):
+        async for chunk in self.query_stream(query=query):
             chunks.append(chunk)
         response = "".join(chunks)
         return response
