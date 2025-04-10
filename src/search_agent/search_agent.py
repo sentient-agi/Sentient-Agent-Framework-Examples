@@ -43,21 +43,11 @@ class SearchAgent(AbstractAgent):
             response_handler: ResponseHandler
     ):
         """Search the internet for information."""
-        # Rephrase query for better search results
-        await response_handler.emit_text_block(
-            "PLAN", "Rephrasing user query..."
-        )
-        rephrased_query = await self.__rephrase_query(query)
-        # Use response handler to emit text blocks to the client
-        await response_handler.emit_text_block(
-            "REPHRASE", f"Rephrased query: {rephrased_query}"
-        )
-
         # Search for information
         await response_handler.emit_text_block(
             "SEARCH", "Searching internet for results..."
         )
-        search_results = await self._search_provider.search(rephrased_query)
+        search_results = await self._search_provider.search(query.prompt)
         if len(search_results["results"]) > 0:
             # Use response handler to emit JSON to the client
             await response_handler.emit_json(
@@ -82,16 +72,6 @@ class SearchAgent(AbstractAgent):
         await final_response_stream.complete()
         # Mark the response as complete
         await response_handler.complete()
-
-
-    async def __rephrase_query(
-            self,
-            query: str
-    ) -> str:
-        """Rephrase the query for better search results."""
-        rephrase_query = f"Rephrase the following query for better search results: {query}"
-        rephrase_query_response = await self._model_provider.query(rephrase_query)
-        return rephrase_query_response
     
 
     async def __process_search_results(
