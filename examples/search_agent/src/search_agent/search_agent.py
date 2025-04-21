@@ -65,7 +65,7 @@ class SearchAgent(AbstractAgent):
         final_response_stream = response_handler.create_text_stream(
             "FINAL_RESPONSE"
             )
-        async for chunk in self.__process_search_results(search_results["results"]):
+        async for chunk in self.__process_search_results(query.prompt, search_results["results"]):
             # Use the text stream to emit chunks of the final response to the client
             await final_response_stream.emit_chunk(chunk)
         # Mark the text stream as complete
@@ -75,11 +75,12 @@ class SearchAgent(AbstractAgent):
     
 
     async def __process_search_results(
-            self, 
+            self,
+            prompt: str,
             search_results: dict
     ) -> AsyncIterator[str]:
         """Process the search results."""
-        process_search_results_query = f"Summarise the following search results: {search_results}"
+        process_search_results_query = f"Summarise the provided search results and use them to answer the provided prompt. Prompt: {prompt}. Search results: {search_results}"
         async for chunk in self._model_provider.query_stream(process_search_results_query):
             yield chunk
 
