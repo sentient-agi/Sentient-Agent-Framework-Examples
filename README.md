@@ -30,6 +30,14 @@
 
 This repo contains examples of simple agents that serve Sentient Chat events using the [Sentient Agent Framework](https://github.com/sentient-agi/Sentient-Agent-Framework). Each example has its own set of instructions in its own README.
 
-In addition to supporting OpenAI API compatible agents, Sentient Chat supports a custom, open source event system for agent responses. These events can be rendered in Sentient Chat to provide a richer user experience. This particularly useful for streaming responses from an AI agent, when you might want to show the agent's work while the response is being generated, rather than having the user wait for the final response.
-
 A python package that provides an agent framework for builing agents that serve Sentient Chat events is currently in beta and is available on [PyPI](https://pypi.org/project/sentient-agent-framework/). The corresponding repo can be found [here](https://github.com/sentient-agi/Sentient-Agent). The repo contains documentation and further instructions on how to use the framework to serve Sentient Chat events.
+
+## Installation
+Clone the repository
+```
+git clone https://github.com/sentient-agi/Sentient-Agent-Framework-Examples.git
+```
+
+## Usage
+1. Pick an agent from the examples directory and follow the instructions in its README to get it up and running.
+2. Run the client from the client directory and follow the instructions in its README to query the agent.
