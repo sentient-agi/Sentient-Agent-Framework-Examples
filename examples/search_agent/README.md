@@ -17,27 +17,30 @@ Add your Fireworks API key to the `.env` file (you can also use any other OpenAI
 #### 3. Add search provider credentials
 Add your Tavily API key to the `.env` file.
 
-#### 4. Create Python virtual environment:
+#### 4. Create Python virtual environment
 ```
 python3 -m venv .venv
 ```
 
-#### 5. Activate Python virtual environment:
+#### 5. Activate Python virtual environment
 ```
 source .venv/bin/activate
 ```
 
-#### 6. Install dependencies:
+#### 6. Install dependencies
 ```
 pip install -r requirements.txt
 ```
 
-#### 7. Run the search agent:
+#### 7. Run the search agent
 ```
 python3 -m src.search_agent.search_agent
 ```
 
-#### 8. Use a tool like [CuRL](https://curl.se/) or [Postman](https://www.postman.com/) to query the server. The agent exposes a single `assist` endpoint:
+#### 8. Use the client to query the server:
+Open the client directory and follow the instructions in the README to run the client and query the server.
+
+#### 9. Alternatively, use tool like [CuRL](https://curl.se/) or [Postman](https://www.postman.com/) to query the server. The agent exposes a single `assist` endpoint:
 ```
 curl -N --location 'http://0.0.0.0:8000/assist' \
 --header 'Content-Type: application/json' \
